@@ -14,11 +14,13 @@ class RouterCallFailed(Exception):
     pass
 
 
-async def grant_app_scoped(config: Config, consumer_app_id: str, service_url: str, grant: dict[str, Any]) -> None:
-    """Register a permission this app is granting to ``consumer_app_id`` for one of its own services.
+async def grant_app_scoped(config: Config, consumer_app_name: str, service_url: str, grant: dict[str, Any]) -> None:
+    """Register a permission this app is granting to ``consumer_app_name`` for one of its own services.
 
-    The router takes the granting provider from the bearer token, so this can only ever create
-    grants against md-notes itself.
+    The consumer is named, not identified by id, so the app the consent page told the owner about
+    is exactly the app that ends up with access — see the router's ``grant_app_scoped``. The router
+    takes the granting provider from our bearer token, so this can only create grants against
+    md-notes itself.
     """
     if not config.router_url or not config.app_token:
         raise RouterCallFailed("router URL / app token not configured — not running on OpenHost")
@@ -26,10 +28,10 @@ async def grant_app_scoped(config: Config, consumer_app_id: str, service_url: st
     async with httpx.AsyncClient(timeout=_TIMEOUT_SECS) as client:
         response = await client.post(
             url,
-            json={"consumer_app_id": consumer_app_id, "service_url": service_url, "grant": grant},
+            json={"consumer_app_name": consumer_app_name, "service_url": service_url, "grant": grant},
             headers={"Authorization": f"Bearer {config.app_token}"},
         )
     if response.status_code != 200:
         logger.error("grant_app_scoped failed: {} {}", response.status_code, response.text[:300])
         raise RouterCallFailed(f"router returned {response.status_code}")
-    logger.info("Granted {} access to {}", consumer_app_id, grant)
+    logger.info("Granted {} access to {}", consumer_app_name, grant)

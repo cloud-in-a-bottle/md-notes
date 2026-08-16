@@ -30,24 +30,8 @@ class ServiceHeaderList:
 
 
 @attr.s(auto_attribs=True, frozen=True)
-class ServiceGrantRequest:
-    """A pending consent handoff: recorded when we 403 a consumer, spent on the consent page.
-
-    The consumer's identity is captured here from the router's headers rather than passed through
-    the grant URL, so nothing the owner sees on the consent page (or grants) can be forged by
-    tampering with the link.
-    """
-
-    token: str
-    consumer_app_id: str
-    consumer_name: str
-    access: Access
-    created_at: str
-
-
-@attr.s(auto_attribs=True, frozen=True)
 class GrantRequestInfo:
-    """What the consent page needs to render — the consumer's app id is deliberately not exposed."""
+    """The consent page's view of a request, after the server has vetted the link's parameters."""
 
     consumerName: str
     access: Access
@@ -57,7 +41,10 @@ class GrantRequestInfo:
 
 @attr.s(auto_attribs=True, frozen=True)
 class ApproveGrantBody:
-    token: str
+    # Name of the app being granted access. Also what the router keys the grant to, so the page
+    # can't show one app and grant another.
+    consumer: str
+    access: Access
     vault: str
     # None grants the whole vault, including files added later.
     paths: list[str] | None = None

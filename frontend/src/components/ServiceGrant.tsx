@@ -1,6 +1,6 @@
 import { createResource, createSignal, For, Show, type Component } from 'solid-js';
 import { listFiles, listVaults } from '../api/client';
-import { approveGrant, fetchGrantRequest, GrantRequestExpiredError, type GrantRequestInfo } from '../api/service-grants';
+import { approveGrant, fetchGrantRequest, type GrantRequestInfo } from '../api/service-grants';
 import type { FileEntry, Vault } from '../api/types';
 import type { ServiceGrantLink } from '../config';
 
@@ -38,7 +38,7 @@ export const ServiceGrant: Component<Props> = (props) => {
   const [error, setError] = createSignal<string | null>(null);
   const [notice, setNotice] = createSignal<string | null>(null);
 
-  const [request] = createResource(() => fetchGrantRequest(props.link.token, props.link.returnTo));
+  const [request] = createResource(() => fetchGrantRequest(props.link));
   const [vaults] = createResource(async () => (await listVaults()).filter((v) => v.owned));
   const [files] = createResource(vault, listFiles);
 
@@ -67,7 +67,7 @@ export const ServiceGrant: Component<Props> = (props) => {
     setBusy(true);
     setError(null);
     try {
-      await approveGrant(props.link.token, chosen.vault, wholeVault() ? null : [...selected()]);
+      await approveGrant(props.link, chosen.vault, wholeVault() ? null : [...selected()]);
       finish(info, true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -77,7 +77,6 @@ export const ServiceGrant: Component<Props> = (props) => {
   }
 
   function errorMessage(e: unknown): string {
-    if (e instanceof GrantRequestExpiredError) return e.message;
     return String(e instanceof Error ? e.message : e);
   }
 

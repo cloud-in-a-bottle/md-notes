@@ -7,6 +7,7 @@ from server.core.service_grants import allows
 from server.core.service_grants import build_grant
 from server.core.service_grants import grant_page_url
 from server.core.service_grants import granted_vaults
+from server.core.service_grants import parse_access
 from server.core.service_grants import parse_permissions_header
 from server.core.service_grants import validated_return_to
 
@@ -97,8 +98,21 @@ def test_grant_payload_round_trips_through_the_header() -> None:
     assert parse_permissions_header(header({"grant": grant.to_payload(), "scope": "app"})) == (grant,)
 
 
-def test_grant_page_url_points_at_this_instance() -> None:
-    assert grant_page_url(CONFIG, "abc123") == "https://md-notes.alice.example.com/service/grant?request=abc123"
+def test_grant_page_url_names_the_requester_and_tier() -> None:
+    assert grant_page_url(CONFIG, "photos-app", "read") == (
+        "https://md-notes.alice.example.com/service/grant?consumer=photos-app&access=read"
+    )
+
+
+def test_grant_page_url_escapes_the_name() -> None:
+    assert "consumer=odd+%26+name" in grant_page_url(CONFIG, "odd & name", "read")
+
+
+def test_parse_access_accepts_only_real_tiers() -> None:
+    assert [parse_access(t) for t in ("read", "comment", "write")] == ["read", "comment", "write"]
+    assert parse_access("admin") is None
+    assert parse_access("") is None
+    assert parse_access(None) is None
 
 
 def test_return_to_must_stay_inside_the_zone() -> None:

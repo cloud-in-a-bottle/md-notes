@@ -49,21 +49,24 @@ instance's data.
 
 Because these can't be declared in a consumer's manifest, md-notes owns the whole approval UX:
 
-1. A call without a sufficient grant hits `ServicePermissionRequired`. The exception handler records
-   the caller's identity (from the router's headers) against a token in `service_grant_requests`,
-   and returns the documented 403 with `grant_url = <this app>/service/grant?request=<token>`.
+1. A call without a sufficient grant hits `ServicePermissionRequired`. The exception handler returns
+   the documented 403 with `grant_url = <this app>/service/grant?consumer=<name>&access=<tier>`,
+   taking the name from the router's `X-OpenHost-Consumer-Name`.
 2. The consumer shows the owner that link with its own `return_to=` appended.
 3. `ServiceGrant.tsx` renders the consent page: who is asking, then a vault picker, then either the
-   whole vault or a file picker. The requesting app's name comes from the token, never from the URL,
-   so a doctored link can't misrepresent who wants access.
+   whole vault or a file picker.
 4. `POST /api/service-grants/approve` validates the selection and calls the router's
-   `grant_app_scoped` with our app token. The router takes the granting provider from that token, so
-   md-notes can only ever grant access to itself.
+   `grant_app_scoped` with our app token, identifying the consumer **by name**. The router takes the
+   granting provider from that token, so md-notes can only ever grant access to itself.
 5. The page sends the browser back to `return_to` with `granted=1` (or `granted=0` if declined), and
    the consumer retries. `return_to` is only honoured if it points inside this OpenHost space —
    otherwise this would be an open redirect driven by an arbitrary app.
 
-Grant requests are reused per (consumer, tier) and expire after 24h.
+Nothing about the pending request is stored. It doesn't need to be: the name in the URL is both what
+the page shows the owner and what the grant is keyed to, so editing it in flight moves the access to
+whichever app is named rather than to the editor, and a name no app answers to is a 404 from the
+router. An id in that position would be forgeable in the way that matters — you could display one
+app's name while granting to another.
 
 ## Testing it
 

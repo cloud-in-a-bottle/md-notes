@@ -1,22 +1,15 @@
-"""SQLite database for share links, vault shares, connected vaults, service grant requests, and settings."""
+"""SQLite database for share links, vault shares, connected vaults, and settings."""
 
 import sqlite3
 import uuid
 from datetime import UTC
 from datetime import datetime
-from datetime import timedelta
 from pathlib import Path
 
-from server.core.service_grants import Access
 from server.models.federation import VaultShare
-from server.models.service import ServiceGrantRequest
 from server.models.share import ShareLink
 from server.models.vaults import Permission
 from server.models.vaults import Vault
-
-# How long a consent handoff stays usable. Long enough that the owner can come back to the link
-# later, short enough that a stale one doesn't sit around indefinitely.
-GRANT_REQUEST_TTL = timedelta(hours=24)
 
 _db_path: Path | None = None
 _conn: sqlite3.Connection | None = None
@@ -51,15 +44,6 @@ def init_db(path: Path) -> None:
             share_name TEXT NOT NULL,
             permission TEXT NOT NULL CHECK (permission IN ('read', 'comment', 'write')),
             created_at TEXT NOT NULL
-        )
-    """)
-    _conn.execute("""
-        CREATE TABLE IF NOT EXISTS service_grant_requests (
-            token           TEXT PRIMARY KEY,
-            consumer_app_id TEXT NOT NULL,
-            consumer_name   TEXT NOT NULL,
-            access          TEXT NOT NULL CHECK (access IN ('read', 'comment', 'write')),
-            created_at      TEXT NOT NULL
         )
     """)
     _conn.execute("""
@@ -247,64 +231,6 @@ def delete_connected_vault(vault_id: str) -> bool:
 def list_connected_vaults() -> list[Vault]:
     rows = _get_conn().execute("SELECT * FROM connected_vaults ORDER BY created_at").fetchall()
     return [_row_to_connected_vault(r) for r in rows]
-
-
-def _row_to_grant_request(row: sqlite3.Row) -> ServiceGrantRequest:
-    return ServiceGrantRequest(
-        token=row["token"],
-        consumer_app_id=row["consumer_app_id"],
-        consumer_name=row["consumer_name"],
-        access=row["access"],
-        created_at=row["created_at"],
-    )
-
-
-def _grant_request_cutoff() -> str:
-    return (datetime.now(UTC) - GRANT_REQUEST_TTL).isoformat()
-
-
-def open_service_grant_request(consumer_app_id: str, consumer_name: str, access: Access) -> ServiceGrantRequest:
-    """Token for a consent handoff, reusing the live one for this consumer + tier if there is one.
-
-    Reuse keeps a consumer that retries in a loop from filling the table, and means the owner can
-    follow an older copy of the same link.
-    """
-    conn = _get_conn()
-    conn.execute("DELETE FROM service_grant_requests WHERE created_at < ?", (_grant_request_cutoff(),))
-    row = conn.execute(
-        "SELECT * FROM service_grant_requests WHERE consumer_app_id = ? AND access = ?"
-        " ORDER BY created_at DESC LIMIT 1",
-        (consumer_app_id, access),
-    ).fetchone()
-    if row is not None:
-        conn.commit()
-        return _row_to_grant_request(row)
-    request = ServiceGrantRequest(
-        token=uuid.uuid4().hex,
-        consumer_app_id=consumer_app_id,
-        consumer_name=consumer_name,
-        access=access,
-        created_at=datetime.now(UTC).isoformat(),
-    )
-    conn.execute(
-        "INSERT INTO service_grant_requests (token, consumer_app_id, consumer_name, access, created_at)"
-        " VALUES (?, ?, ?, ?, ?)",
-        (request.token, request.consumer_app_id, request.consumer_name, request.access, request.created_at),
-    )
-    conn.commit()
-    return request
-
-
-def get_service_grant_request(token: str) -> ServiceGrantRequest | None:
-    row = (
-        _get_conn()
-        .execute(
-            "SELECT * FROM service_grant_requests WHERE token = ? AND created_at >= ?",
-            (token, _grant_request_cutoff()),
-        )
-        .fetchone()
-    )
-    return _row_to_grant_request(row) if row else None
 
 
 def list_links(doc_path: str | None = None) -> list[ShareLink]:

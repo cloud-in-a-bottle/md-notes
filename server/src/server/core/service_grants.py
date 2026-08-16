@@ -104,12 +104,16 @@ def allows(grants: tuple[NotesGrant, ...], vault: str, path: str | None, access:
     return any(g.covers(vault, path, access) for g in grants)
 
 
-def grant_page_url(config: Config, token: str) -> str:
-    """Where we send a consumer's user to shape a grant. The token carries the requester's identity,
-    so nothing about who is asking rides in the link itself."""
+def grant_page_url(config: Config, consumer_name: str, access: Access) -> str:
+    """Where we send a consumer's user to shape a grant.
+
+    The consumer's name rides in the link unprotected, which is safe because the same name is what
+    we hand the router when the grant is made: tamper with it and the access lands on the app the
+    page named, not on the tamperer. So there is nothing here worth storing server-side.
+    """
     if not config.app_origin:
         raise RuntimeError("app_origin not configured — cannot build grant URLs")
-    return f"{config.app_origin}/service/grant?{urlencode({'request': token})}"
+    return f"{config.app_origin}/service/grant?{urlencode({'consumer': consumer_name, 'access': access})}"
 
 
 def validated_return_to(config: Config, url: str | None) -> str | None:
@@ -126,6 +130,11 @@ def validated_return_to(config: Config, url: str | None) -> str | None:
     zone_host = config.zone_domain.split(":")[0].lower()
     host = parsed.hostname.lower()
     return url if host == zone_host or host.endswith(f".{zone_host}") else None
+
+
+def parse_access(value: str | None) -> Access | None:
+    """``value`` as an access tier, or None if it isn't one."""
+    return cast(Access, value) if value in _ACCESS_RANK else None
 
 
 def granted_vaults(grants: tuple[NotesGrant, ...], access: Access) -> list[str]:

@@ -18,7 +18,6 @@ from server.core.comments import InvalidComment
 from server.core.config import Config
 from server.core.db import close_db
 from server.core.db import init_db
-from server.core.db import open_service_grant_request
 from server.core.files import PathTraversalError
 from server.core.history import HistoryManager
 from server.core.router_api import RouterCallFailed
@@ -101,18 +100,18 @@ def _service_permission_handler(
 ) -> Response[dict[str, Any]]:
     """The service's documented 403: what's missing, plus where the owner can grant it.
 
-    Consumer identity comes from the router's headers and is stashed against a token rather than
-    put in the URL, so the consent page can state who is asking without trusting the link.
+    The consumer's name comes from the router and goes straight into the grant URL. Nothing is
+    recorded — the name is also what we later hand the router to create the grant, so a link edited
+    on its way to the owner grants access to whichever app it names.
     """
     config: Config = request.app.state.config
-    consumer_id = request.headers.get("x-openhost-consumer-id", "")
-    consumer_name = request.headers.get("x-openhost-consumer-name") or consumer_id
-    grant_request = open_service_grant_request(consumer_id, consumer_name, exc.access)
+    headers = request.headers
+    consumer_name = headers.get("x-openhost-consumer-name") or headers.get("x-openhost-consumer-id") or ""
     return Response(
         {
             "error": "permission_required",
             "required_grant": {"grant": {"access": exc.access}, "scope": "app"},
-            "grant_url": grant_page_url(config, grant_request.token),
+            "grant_url": grant_page_url(config, consumer_name, exc.access),
         },
         status_code=403,
     )

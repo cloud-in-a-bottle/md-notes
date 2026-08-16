@@ -49,8 +49,10 @@ export function getFederationInvite(): FederationInvite | null {
 }
 
 export interface ServiceGrantLink {
-  /** Token identifying the pending request; the server holds the requesting app's identity. */
-  token: string;
+  /** OpenHost app name of the requester. Also what the grant is keyed to, so editing it here only
+   *  redirects the access to whichever app is named — never to the editor. */
+  consumer: string;
+  access: string;
   /** Where the requesting app wants the browser sent afterwards; the server vets it. */
   returnTo: string | null;
 }
@@ -58,7 +60,11 @@ export interface ServiceGrantLink {
 export function parseServiceGrantLink(pathname: string, search: string): ServiceGrantLink | null {
   if (pathname.replace(/\/$/, '') !== '/service/grant') return null;
   const params = new URLSearchParams(search);
-  return { token: params.get('request') ?? '', returnTo: params.get('return_to') };
+  return {
+    consumer: params.get('consumer') ?? '',
+    access: params.get('access') ?? '',
+    returnTo: params.get('return_to'),
+  };
 }
 
 /** Params from a /service/grant consent link, or null for the regular app. */

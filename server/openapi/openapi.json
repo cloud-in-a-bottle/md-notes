@@ -2302,19 +2302,32 @@
         "deprecated": false
       }
     },
-    "/api/service-grants/request/{token}": {
+    "/api/service-grants/request": {
       "get": {
         "summary": "ReadRequest",
-        "operationId": "ApiServiceGrantsRequestTokenReadRequest",
+        "operationId": "ApiServiceGrantsRequestReadRequest",
         "parameters": [
           {
-            "name": "token",
-            "in": "path",
+            "name": "consumer",
+            "in": "query",
             "schema": {
               "type": "string"
             },
             "required": true,
-            "deprecated": false
+            "deprecated": false,
+            "allowEmptyValue": false,
+            "allowReserved": false
+          },
+          {
+            "name": "access",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "deprecated": false,
+            "allowEmptyValue": false,
+            "allowReserved": false
           },
           {
             "name": "return_to",
@@ -2540,8 +2553,16 @@
     "schemas": {
       "ApproveGrantBody": {
         "properties": {
-          "token": {
+          "consumer": {
             "type": "string"
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "read",
+              "comment",
+              "write"
+            ]
           },
           "vault": {
             "type": "string"
@@ -2562,7 +2583,8 @@
         },
         "type": "object",
         "required": [
-          "token",
+          "access",
+          "consumer",
           "vault"
         ],
         "title": "ApproveGrantBody"

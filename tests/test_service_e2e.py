@@ -92,17 +92,11 @@ def call(stack: OpenhostStack, consumer: str, endpoint: str, **query: str) -> di
     return r.json()  # type: ignore[no-any-return]
 
 
-def request_token(stack: OpenhostStack, consumer: str) -> str:
-    """Trigger the 403 and pull the consent-request token out of the grant URL it hands back."""
-    grant_url = call(stack, consumer, "files")["grant_url"]
-    return grant_url.split("request=")[1].split("&")[0]
-
-
-def grant_headless(stack: OpenhostStack, consumer: str, paths: list[str] | None) -> None:
+def grant_headless(stack: OpenhostStack, paths: list[str] | None, consumer_name: str = CONSUMER_NAME) -> None:
     """What the consent page does, without a browser. ``paths`` None grants the whole vault."""
     r = stack.owner_session.post(
         f"{stack.url}/api/service-grants/approve",
-        json={"token": request_token(stack, consumer), "vault": VAULT, "paths": paths},
+        json={"consumer": consumer_name, "access": "read", "vault": VAULT, "paths": paths},
     )
     assert r.status_code == 200, r.text
 
@@ -116,7 +110,9 @@ def test_call_without_grant_asks_for_permission(stack: OpenhostStack, consumer: 
     assert result["body"]["error"] == "permission_required"
     assert result["body"]["required_grant"] == {"grant": {"access": "read"}, "scope": "app"}
     # The consent page lives in md-notes, and the consumer can hand the user straight to it.
-    assert result["body"]["grant_url"].startswith(f"{stack.url}/service/grant?request=")
+    assert result["body"]["grant_url"].startswith(f"{stack.url}/service/grant?")
+    assert f"consumer={CONSUMER_NAME}" in result["body"]["grant_url"]
+    assert "access=read" in result["body"]["grant_url"]
     assert "return_to=" in result["grant_url"]
 
 
@@ -177,32 +173,54 @@ def test_declining_sends_the_user_back_empty_handed(stack: OpenhostStack, consum
     expect(page.locator("#status")).to_have_text("No access yet.")
 
 
+def _read_request(stack: OpenhostStack, **params: str) -> Any:
+    return stack.owner_session.get(f"{stack.url}/api/service-grants/request", params=params)
+
+
 def test_consent_page_drops_a_return_url_outside_the_space(stack: OpenhostStack, consumer: str) -> None:
-    token = request_token(stack, consumer)
-    info = stack.owner_session.get(
-        f"{stack.url}/api/service-grants/request/{token}", params={"return_to": consumer}
-    ).json()
+    info = _read_request(stack, consumer=CONSUMER_NAME, access="read", return_to=consumer).json()
     assert info["consumerName"] == CONSUMER_NAME
     assert info["access"] == "read"
     assert info["returnTo"] == consumer
 
-    evil = stack.owner_session.get(
-        f"{stack.url}/api/service-grants/request/{token}", params={"return_to": "https://evil.example.com/"}
-    ).json()
+    evil = _read_request(stack, consumer=CONSUMER_NAME, access="read", return_to="https://evil.example.com/").json()
     assert evil["returnTo"] is None
 
 
-def test_unknown_request_token_is_rejected(stack: OpenhostStack) -> None:
-    assert stack.owner_session.get(f"{stack.url}/api/service-grants/request/nope").status_code == 404
+def test_malformed_grant_links_are_rejected(stack: OpenhostStack) -> None:
+    assert _read_request(stack, consumer=CONSUMER_NAME, access="admin").status_code == 400
+    assert _read_request(stack, consumer="", access="read").status_code == 400
     r = stack.owner_session.post(
-        f"{stack.url}/api/service-grants/approve", json={"token": "nope", "vault": VAULT, "paths": None}
+        f"{stack.url}/api/service-grants/approve",
+        json={"consumer": CONSUMER_NAME, "access": "admin", "vault": VAULT, "paths": None},
     )
-    assert r.status_code == 404
+    assert r.status_code == 400
 
 
-def test_consent_page_needs_the_owner(stack: OpenhostStack, consumer: str) -> None:
-    token = request_token(stack, consumer)
-    anonymous = requests.get(f"{stack.url}/api/service-grants/request/{token}", allow_redirects=False, timeout=10)
+def test_naming_an_app_that_does_not_exist_grants_nothing(stack: OpenhostStack, consumer: str) -> None:
+    """The router resolves the name, so an unknown one fails instead of granting to the asker."""
+    r = stack.owner_session.post(
+        f"{stack.url}/api/service-grants/approve",
+        json={"consumer": "no-such-app", "access": "read", "vault": VAULT, "paths": None},
+    )
+    assert r.status_code == 502, r.text
+    assert call(stack, consumer, "files")["status"] == 403
+
+
+def test_naming_a_different_app_does_not_grant_the_requester(stack: OpenhostStack, consumer: str) -> None:
+    """Why the grant is keyed to the name: a consent screen that names the wrong app grants the
+    wrong app. Misrepresenting who is asking can never benefit the one who asked."""
+    grant_headless(stack, None, consumer_name="md-notes")
+    assert call(stack, consumer, "files")["status"] == 403
+
+
+def test_consent_page_needs_the_owner(stack: OpenhostStack) -> None:
+    anonymous = requests.get(
+        f"{stack.url}/api/service-grants/request",
+        params={"consumer": CONSUMER_NAME, "access": "read"},
+        allow_redirects=False,
+        timeout=10,
+    )
     assert anonymous.status_code in (302, 401)
 
 
@@ -210,7 +228,7 @@ def test_consent_page_needs_the_owner(stack: OpenhostStack, consumer: str) -> No
 
 
 def test_whole_vault_grant_reads_everything(stack: OpenhostStack, consumer: str) -> None:
-    grant_headless(stack, consumer, None)
+    grant_headless(stack, None)
     files = call(stack, consumer, "files")
     assert files["status"] == 200
     assert sorted(f["path"] for f in files["body"]["files"]) == sorted([LIVE, PRIVATE, SHARED])
@@ -222,7 +240,7 @@ def test_whole_vault_grant_reads_everything(stack: OpenhostStack, consumer: str)
 
 
 def test_file_grant_hides_everything_else(stack: OpenhostStack, consumer: str) -> None:
-    grant_headless(stack, consumer, [SHARED])
+    grant_headless(stack, [SHARED])
     files = call(stack, consumer, "files")
     assert [f["path"] for f in files["body"]["files"]] == [SHARED]
 
@@ -232,7 +250,7 @@ def test_file_grant_hides_everything_else(stack: OpenhostStack, consumer: str) -
 
 
 def test_a_grant_cannot_be_walked_out_of_its_vault(stack: OpenhostStack, consumer: str) -> None:
-    grant_headless(stack, consumer, None)
+    grant_headless(stack, None)
     stack.owner_session.post(f"{stack.url}/api/vaults", json={"name": "othervault"})
     stack.owner_session.post(
         f"{stack.url}/api/docs/othervault/file", params={"path": "secret.md"}, json={"content": "nope"}
@@ -243,7 +261,7 @@ def test_a_grant_cannot_be_walked_out_of_its_vault(stack: OpenhostStack, consume
 
 
 def test_list_headers(stack: OpenhostStack, consumer: str) -> None:
-    grant_headless(stack, consumer, [SHARED])
+    grant_headless(stack, [SHARED])
     result = call(stack, consumer, "file-headers", vault=VAULT, path=SHARED)
     assert result["status"] == 200
     assert result["body"]["vault"] == VAULT
@@ -257,7 +275,7 @@ def test_list_headers(stack: OpenhostStack, consumer: str) -> None:
 
 
 def test_read_one_header_with_its_subsections(stack: OpenhostStack, consumer: str) -> None:
-    grant_headless(stack, consumer, [SHARED])
+    grant_headless(stack, [SHARED])
     result = call(stack, consumer, "file-section", vault=VAULT, path=SHARED, header="plan")
     assert result["status"] == 200
     assert result["body"] == "## Plan\n\nShip it.\n\n### Later\n\nMaybe."
@@ -266,14 +284,14 @@ def test_read_one_header_with_its_subsections(stack: OpenhostStack, consumer: st
 
 
 def test_missing_file_and_vault_are_404(stack: OpenhostStack, consumer: str) -> None:
-    grant_headless(stack, consumer, None)
+    grant_headless(stack, None)
     assert call(stack, consumer, "file", vault=VAULT, path="ghost.md")["status"] == 404
     assert call(stack, consumer, "files", vault="ghostvault")["status"] == 403
 
 
 def test_reads_reflect_unsaved_crdt_edits(stack: OpenhostStack, consumer: str, page: Page) -> None:
     """Content comes from the live Y.Doc, not the .md — which only catches up on the save debounce."""
-    grant_headless(stack, consumer, None)
+    grant_headless(stack, None)
     marker = "LIVE_CRDT_EDIT"
 
     stack.playwright_login(page)

@@ -641,6 +641,7 @@ source = { editable = "." }
 dependencies = [
     { name = "anyio" },
     { name = "attrs" },
+    { name = "httpx" },
     { name = "hypercorn" },
     { name = "litestar" },
     { name = "loguru" },
@@ -663,6 +664,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.13.0" },
     { name = "attrs", specifier = ">=24.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "hypercorn", specifier = ">=0.17" },
     { name = "litestar", specifier = ">=2.22.0" },
     { name = "loguru", specifier = ">=0.7.3" },

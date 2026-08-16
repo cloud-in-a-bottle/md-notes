@@ -13,6 +13,9 @@ os.environ.setdefault("OPENHOST_SQLITE_MAIN", "/tmp/mdnotes-openapi/main.db")
 os.environ.setdefault("MDNOTES_FRONTEND_DIST", "/tmp")
 os.environ.setdefault("OPENHOST_APP_NAME", "md-notes")
 os.environ.setdefault("OPENHOST_ZONE_DOMAIN", "example.invalid")
+os.environ.setdefault("OPENHOST_APP_ID", "openapi-app-id")
+os.environ.setdefault("OPENHOST_APP_TOKEN", "openapi-app-token")
+os.environ.setdefault("OPENHOST_ROUTER_URL", "http://router.invalid")
 
 from server.core.config import load_config  # noqa: E402
 from server.web.app import create_app  # noqa: E402

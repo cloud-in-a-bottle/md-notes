@@ -13,6 +13,12 @@ health_check = "/health"
 # OpenHost router owner sessions are also accepted (X-OpenHost-Is-Owner).
 public_paths = ["/"]
 
+# Read-only notes access for other apps in the space. Spec + grant shape: services/notes/.
+[[services.v2.provides]]
+service = "github.com/imbue-openhost/md-notes/services/notes"
+version = "0.1.0"
+endpoint = "/api/service/notes/"
+
 [resources]
 memory_mb = 1024
 # more cores = faster search

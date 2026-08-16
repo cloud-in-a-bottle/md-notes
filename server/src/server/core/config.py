@@ -19,6 +19,14 @@ class Config:
     # Public origin of this app instance (e.g. "https://md-notes.alice.selfhost.imbue.com"); federation
     # invite links point here. Empty only in unit tests that construct Config directly.
     app_origin: str = ""
+    # Domain of the OpenHost space this app runs in. Consent-page redirects back to a consumer app
+    # are confined to it, so a service call can't turn md-notes into an open redirect.
+    zone_domain: str = ""
+    # This app's OpenHost identity plus the router's internal URL — needed to register the
+    # permission grants the consent page creates. Empty only in unit tests.
+    app_id: str = ""
+    app_token: str = ""
+    router_url: str = ""
 
 
 def _require_env(name: str) -> str:
@@ -40,6 +48,10 @@ def load_config() -> Config:
         vault_path=Path(app_data_dir) / "vault",
         db_path=Path(sqlite_main),
         app_origin=f"{scheme}://{app_name}.{zone_domain}",
+        zone_domain=zone_domain,
+        app_id=_require_env("OPENHOST_APP_ID"),
+        app_token=_require_env("OPENHOST_APP_TOKEN"),
+        router_url=_require_env("OPENHOST_ROUTER_URL"),
         # The platform documents "owner" as the default when the operator hasn't configured a name.
         owner_name=os.environ.get("OPENHOST_OWNER_USERNAME", "owner"),
     )

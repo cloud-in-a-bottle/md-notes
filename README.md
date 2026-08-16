@@ -68,6 +68,15 @@ another md-notes user..." in the sidebar's vault menu), named per recipient, and
 share produces an invite link to this instance; the recipient pastes it into their own md-notes
 ("Manage vaults… → Connect a shared vault"), whose server merely records the connection.
 
+### cross-app service
+
+Other apps in the same OpenHost space can read notes through the `notes` service
+(`github.com/imbue-openhost/md-notes/services/notes`): list files, list a file's headers, read one
+section, read a whole file — raw markdown, read out of the live CRDT. Access is per-vault and
+optionally per-file, and md-notes serves its own consent page (`/service/grant`) where the owner
+shapes the grant, so a consumer app can't ask for more than the owner picks. Published spec in
+`services/notes/`; implementation notes in `docs/notes_service.md`.
+
 ### tauri native editor
 
 - intended to share most code with the web editor, just packaged as a native app
@@ -79,9 +88,12 @@ share produces an invite link to this instance; the recipient pastes it into the
 
 Running locally without a container (faster iteration than the openhost harness):
 
-- **Server**: config comes from two env vars and fails loudly without them. Vaults are plain directories of .md files under `$OPENHOST_APP_DATA_DIR/vault/<vault-name>/`.
+- **Server**: config comes from the OpenHost env vars and fails loudly without them. Vaults are plain directories of .md files under `$OPENHOST_APP_DATA_DIR/vault/<vault-name>/`. The identity/router vars only matter for links and cross-app calls, so any placeholder works locally.
   ```bash
-  OPENHOST_APP_DATA_DIR=/tmp/mdnotes OPENHOST_SQLITE_MAIN=/tmp/mdnotes/main.db uv run python -m server
+  OPENHOST_APP_DATA_DIR=/tmp/mdnotes OPENHOST_SQLITE_MAIN=/tmp/mdnotes/main.db \
+  OPENHOST_APP_NAME=md-notes OPENHOST_ZONE_DOMAIN=localhost:5173 \
+  OPENHOST_APP_ID=dev OPENHOST_APP_TOKEN=dev OPENHOST_ROUTER_URL=http://localhost:9999 \
+  uv run python -m server
   ```
 - **Frontend**: `cd frontend && npx vite` proxies `/api` (including websockets) to `localhost:8000`. Authed routes only check for an `x-openhost-is-owner: true` header (normally set by the OpenHost router). `npx vite --config vite.config.lan.mts` injects that header at the proxy (skipping the login flow) and listens on all interfaces — use it to test from a phone on the same network (`http://<laptop-ip>:5173`). Local testing only; don't expose beyond a trusted network. Share pages (`/share/<uuid>`) are public and need no header.
 - **Driving it headlessly**: `@playwright/test` is a frontend devDependency. Docs load empty and fill via CRDT sync, so after `.cm-editor` appears allow ~1s before asserting on content. The default editor is non-vim (typing inserts directly); set `localStorage['mdnotes-editor-kind'] = 'live-preview-vim'` before load for vim keys, or emulate a phone viewport for the mobile shell.

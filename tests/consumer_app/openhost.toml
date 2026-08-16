@@ -1,0 +1,23 @@
+[app]
+name = "notes-reader"
+version = "0.1.0"
+description = "Test consumer of md-notes' notes service"
+hidden = true
+
+[runtime.container]
+image = "Dockerfile"
+port = 5000
+
+[routing]
+health_check = "/health"
+
+[resources]
+memory_mb = 64
+cpu_cores = 0.1
+
+[[services.v2.consumes]]
+service = "github.com/imbue-openhost/md-notes/services/notes"
+shortname = "notes"
+version = ">=0.1.0"
+# No `grants` on purpose: this service only honours app-scoped grants, which the owner creates in
+# md-notes' consent page.

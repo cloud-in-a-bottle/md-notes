@@ -48,6 +48,25 @@ export function getFederationInvite(): FederationInvite | null {
   return parseFederationInvite(window.location.pathname, window.location.search);
 }
 
+export interface ServiceGrantLink {
+  /** Token identifying the pending request; the server holds the requesting app's identity. */
+  token: string;
+  /** Where the requesting app wants the browser sent afterwards; the server vets it. */
+  returnTo: string | null;
+}
+
+export function parseServiceGrantLink(pathname: string, search: string): ServiceGrantLink | null {
+  if (pathname.replace(/\/$/, '') !== '/service/grant') return null;
+  const params = new URLSearchParams(search);
+  return { token: params.get('request') ?? '', returnTo: params.get('return_to') };
+}
+
+/** Params from a /service/grant consent link, or null for the regular app. */
+export function getServiceGrantLink(): ServiceGrantLink | null {
+  if (typeof window === 'undefined') return null;
+  return parseServiceGrantLink(window.location.pathname, window.location.search);
+}
+
 /** UUID extracted from /share/<uuid> URLs, or null for the regular app. */
 export function getShareUuid(): string | null {
   if (typeof window === 'undefined') return null;

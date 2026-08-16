@@ -1,7 +1,7 @@
 # The notes service
 
-md-notes provides an OpenHost [cross-app service](https://github.com/imbue-openhost/openhost/blob/main/docs/src/cross_app_services.md)
-so other apps in the same space can read notes: `github.com/imbue-openhost/md-notes/services/notes`.
+md-notes provides an OpenHost [cross-app service](https://github.com/cloud-in-a-bottle/cloud-in-a-bottle/blob/main/docs/src/cross_app_services.md)
+so other apps in the same space can read notes: `github.com/cloud-in-a-bottle/md-notes/services/notes`.
 The published spec is in [`services/notes/`](../services/notes/); this file is about how it's built.
 
 Read-only for now. Everything is shaped so comment and write tiers can be added later without a new

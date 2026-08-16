@@ -71,7 +71,7 @@ share produces an invite link to this instance; the recipient pastes it into the
 ### cross-app service
 
 Other apps in the same OpenHost space can read notes through the `notes` service
-(`github.com/imbue-openhost/md-notes/services/notes`): list files, list a file's headers, read one
+(`github.com/cloud-in-a-bottle/md-notes/services/notes`): list files, list a file's headers, read one
 section, read a whole file — raw markdown, read out of the live CRDT. Access is per-vault and
 optionally per-file, and md-notes serves its own consent page (`/service/grant`) where the owner
 shapes the grant, so a consumer app can't ask for more than the owner picks. Published spec in

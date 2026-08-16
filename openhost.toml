@@ -15,7 +15,7 @@ public_paths = ["/"]
 
 # Read-only notes access for other apps in the space. Spec + grant shape: services/notes/.
 [[services.v2.provides]]
-service = "github.com/imbue-openhost/md-notes/services/notes"
+service = "github.com/cloud-in-a-bottle/md-notes/services/notes"
 version = "0.1.0"
 endpoint = "/api/service/notes/"
 

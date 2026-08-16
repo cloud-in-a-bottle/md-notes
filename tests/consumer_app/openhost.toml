@@ -16,7 +16,7 @@ memory_mb = 64
 cpu_cores = 0.1
 
 [[services.v2.consumes]]
-service = "github.com/imbue-openhost/md-notes/services/notes"
+service = "github.com/cloud-in-a-bottle/md-notes/services/notes"
 shortname = "notes"
 version = ">=0.1.0"
 # No `grants` on purpose: this service only honours app-scoped grants, which the owner creates in

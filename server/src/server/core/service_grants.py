@@ -26,7 +26,7 @@ from server.core.config import Config
 
 # Identity of the service we provide. Must match [[services.v2.provides]] in openhost.toml — the
 # router keys stored grants by it.
-SERVICE_URL = "github.com/imbue-openhost/md-notes/services/notes"
+SERVICE_URL = "github.com/cloud-in-a-bottle/md-notes/services/notes"
 
 Access = Literal["read", "comment", "write"]
 

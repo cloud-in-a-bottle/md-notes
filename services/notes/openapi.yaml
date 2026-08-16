@@ -5,7 +5,7 @@ info:
     Read-only access to markdown notes held by an md-notes instance, for other apps in the same
     OpenHost space.
 
-    **Service URL:** `github.com/imbue-openhost/md-notes/services/notes`
+    **Service URL:** `github.com/cloud-in-a-bottle/md-notes/services/notes`
 
     Calls are proxied by the OpenHost router, which injects `X-OpenHost-Permissions` with the
     calling app's granted permissions. The provider enforces them.

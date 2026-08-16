@@ -19,7 +19,7 @@ pytestmark = pytest.mark.containers
 
 CONSUMER_DIR = Path(__file__).parent / "consumer_app"
 CONSUMER_NAME = "notes-reader"
-SERVICE_URL = "github.com/imbue-openhost/md-notes/services/notes"
+SERVICE_URL = "github.com/cloud-in-a-bottle/md-notes/services/notes"
 
 VAULT = "svcvault"
 SHARED = "shared.md"
@@ -45,6 +45,10 @@ Fin.
 """
 
 
+# Module fixtures here must be idempotent: pytest re-runs them whenever browser parametrization
+# splits this module's tests into non-contiguous groups, and they share one session-scoped stack.
+
+
 @pytest.fixture(scope="module", autouse=True)
 def _seed_vault(stack: OpenhostStack) -> None:
     s = stack.owner_session
@@ -52,13 +56,14 @@ def _seed_vault(stack: OpenhostStack) -> None:
     seeded = ((SHARED, SHARED_CONTENT), (PRIVATE, "# Private\n\nSecret."), (LIVE, "# Live\n\nBaseline."))
     for path, content in seeded:
         r = s.post(f"{stack.url}/api/docs/{VAULT}/file", params={"path": path}, json={"content": content})
-        assert r.status_code == 201, r.text
+        assert r.status_code in (201, 409), r.text
 
 
 @pytest.fixture(scope="module")
 def consumer(stack: OpenhostStack) -> str:
     """Deploy the dummy consumer app; returns its URL through the router."""
-    stack.deploy_app(f"file://{CONSUMER_DIR}")
+    if CONSUMER_NAME not in stack.local_stack.deployed_app_names:
+        stack.deploy_app(f"file://{CONSUMER_DIR}")
     return stack.url_for(CONSUMER_NAME)
 
 

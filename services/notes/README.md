@@ -1,6 +1,6 @@
 # notes service
 
-`github.com/imbue-openhost/md-notes/services/notes` — read-only access to a markdown vault for
+`github.com/cloud-in-a-bottle/md-notes/services/notes` — read-only access to a markdown vault for
 other apps in the same OpenHost space. The full spec, including the permission-grant shape and the
 consent flow, is in [openapi.yaml](openapi.yaml).
 
@@ -8,7 +8,7 @@ Consume it with:
 
 ```toml
 [[services.v2.consumes]]
-service = "github.com/imbue-openhost/md-notes/services/notes"
+service = "github.com/cloud-in-a-bottle/md-notes/services/notes"
 shortname = "notes"
 version = ">=0.1.0"
 ```

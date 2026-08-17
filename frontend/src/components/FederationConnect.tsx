@@ -6,7 +6,7 @@ interface Props {
   invite: FederationInvite;
 }
 
-const GITHUB_URL = 'https://github.com/imbue-openhost/md-notes';
+const GITHUB_URL = 'https://github.com/cloud-in-a-bottle/md-notes';
 
 const PERMISSION_LABELS = { read: 'view only', comment: 'can comment', write: 'can edit' } as const;
 

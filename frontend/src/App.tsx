@@ -17,7 +17,7 @@ import {
 import { connectionState, UnauthorizedError, startHeartbeat } from './api/connection';
 import {
   serverUrl, getShareUuid, getVaultNameFromUrl, getUrlHeaderAnchor, fetchShareInfo, getLoginUrl,
-  getFederationInvite, type ShareInfo,
+  getFederationInvite, getServiceGrantLink, type ShareInfo,
 } from './config';
 import type { Vault } from './api/types';
 import { VaultPicker } from './components/VaultPicker';
@@ -29,6 +29,7 @@ import { resolveShellKind } from './app-settings';
 import { ShareModal } from './components/ShareModal';
 import { VaultShareModal } from './components/VaultShareModal';
 import { FederationConnect } from './components/FederationConnect';
+import { ServiceGrant } from './components/ServiceGrant';
 import { WebSettingsModal } from './components/SettingsModal';
 import { QuickOpen } from './components/QuickOpen';
 import { SearchModal } from './components/SearchModal';
@@ -98,6 +99,9 @@ export const App: Component = () => {
 
   const federationInvite = getFederationInvite();
   if (federationInvite) return <FederationConnect invite={federationInvite} />;
+
+  const serviceGrantLink = getServiceGrantLink();
+  if (serviceGrantLink) return <ServiceGrant link={serviceGrantLink} />;
 
   const [activeVimrc, setActiveVimrc] = createSignal(DEFAULT_VIMRC);
   const [ownerName, setOwnerName] = createSignal('owner');

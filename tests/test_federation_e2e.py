@@ -47,7 +47,9 @@ def _seed_vault(stack: OpenhostStack) -> None:
     s = stack.owner_session
     s.post(f"{stack.url}/api/vaults", json={"name": VAULT})
     r = s.post(f"{stack.url}/api/docs/{VAULT}/file?path={FILE}", json={"content": FILE_CONTENT})
-    assert r.status_code == 201, r.text
+    # 409 = already seeded: pytest re-runs this fixture when browser parametrization splits the
+    # module's tests, and the stack it seeds into outlives the module.
+    assert r.status_code in (201, 409), r.text
 
 
 def _create_share(stack: OpenhostStack, name: str, permission: str) -> dict:
@@ -176,7 +178,7 @@ def test_invite_landing_page(stack: OpenhostStack, page: Page) -> None:
     expect(page.locator(".vault-picker-card")).to_contain_text(VAULT)
     expect(page.locator(".vault-picker-card")).to_contain_text("view only")
     # Recipients without their own instance can discover the app.
-    github = page.locator('.federation-connect-footer a[href="https://github.com/imbue-openhost/md-notes"]')
+    github = page.locator('.federation-connect-footer a[href="https://github.com/cloud-in-a-bottle/md-notes"]')
     expect(github).to_be_visible()
     stack.owner_session.delete(f"{stack.url}/api/federation/shares/{share['secret']}")
 

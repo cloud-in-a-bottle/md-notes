@@ -1,0 +1,225 @@
+openapi: 3.0.3
+info:
+  title: md-notes Notes Service
+  description: |
+    Read-only access to markdown notes held by an md-notes instance, for other apps in the same
+    OpenHost space.
+
+    **Service URL:** `github.com/cloud-in-a-bottle/md-notes/services/notes`
+
+    Calls are proxied by the OpenHost router, which injects `X-OpenHost-Permissions` with the
+    calling app's granted permissions. The provider enforces them.
+
+    Content is read out of the live CRDT rather than off disk, so a document being edited right
+    now returns the in-flight text. Responses are raw markdown — no comments, anchors, or other
+    md-notes metadata are included.
+
+    ## Permission grants
+
+    Grants are **app-scoped** (`scope: "app"`): they name a vault inside one specific md-notes
+    instance, so a grant made against a different provider of this service must never unlock this
+    one. Global-scoped grants are ignored.
+
+    A grant payload is:
+
+    ```json
+    {"vault": "<vault name>", "paths": "*", "access": "read"}
+    ```
+
+    - `vault` — the vault the grant applies to.
+    - `paths` — `"*"` for the whole vault including files added later, or an array of exact file
+      paths relative to the vault root (e.g. `["inbox.md", "projects/plan.md"]`).
+    - `access` — the tier: `read`, `comment`, or `write`, ordered so a higher tier implies the
+      lower ones. Only `read` is meaningful today; the other two are reserved for when this
+      service grows comment and write endpoints, and are already accepted by the matcher.
+
+    Consumers cannot ask for these in their manifest — they are data-dependent, so they are
+    granted through md-notes' own consent page.
+
+    ## Getting a grant
+
+    A call without a sufficient grant returns `403` with a `grant_url` pointing at a page in the
+    md-notes app:
+
+    ```json
+    {
+      "error": "permission_required",
+      "required_grant": {"grant": {"access": "read"}, "scope": "app"},
+      "grant_url": "https://md-notes.<zone>/service/grant?request=<token>"
+    }
+    ```
+
+    The consumer app shows that URL to the owner with its own `return_to` appended
+    (`&return_to=https://<consumer>.<zone>/...`, which must be on the same zone). The owner picks
+    a vault and either specific files or the whole vault, md-notes registers the grant with the
+    router, and the browser is sent back to `return_to` — with `?granted=1` on approval and
+    `?granted=0` if the owner declined. The consumer then retries the original call.
+  version: 0.1.0
+
+servers:
+  - url: /api/services/v2/call/{shortname}
+    description: Through the OpenHost router, from a consumer app.
+    variables:
+      shortname:
+        default: notes
+        description: The shortname the consumer declared in [[services.v2.consumes]].
+
+paths:
+  /files:
+    get:
+      summary: List readable files
+      description: |
+        Every markdown file the caller may read, across all vaults it holds a grant for.
+        Directories are not listed. A caller with no grants at all gets `403`.
+      parameters:
+        - name: vault
+          in: query
+          required: false
+          schema: {type: string}
+          description: Restrict the listing to one vault.
+      responses:
+        "200":
+          description: The readable files.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [files]
+                properties:
+                  files:
+                    type: array
+                    items: {$ref: "#/components/schemas/FileRef"}
+        "403": {$ref: "#/components/responses/PermissionRequired"}
+
+  /file-headers:
+    get:
+      summary: List the headers in a file
+      description: |
+        ATX headings (`#` … `######`) in document order; headings inside fenced code blocks are
+        skipped. `slug` is the GitHub-style anchor md-notes uses for header share links, and is
+        what `/file-section` takes. When two headings slugify the same, `/file-section` returns
+        the first.
+      parameters:
+        - {$ref: "#/components/parameters/Vault"}
+        - {$ref: "#/components/parameters/Path"}
+      responses:
+        "200":
+          description: The file's headers.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [vault, path, headers]
+                properties:
+                  vault: {type: string}
+                  path: {type: string}
+                  headers:
+                    type: array
+                    items: {$ref: "#/components/schemas/Header"}
+        "403": {$ref: "#/components/responses/PermissionRequired"}
+        "404": {description: No such vault or file.}
+
+  /file-section:
+    get:
+      summary: Read one section
+      description: |
+        The heading line plus everything under it — body text and any nested subheadings — up to
+        the next heading of the same or a higher level.
+      parameters:
+        - {$ref: "#/components/parameters/Vault"}
+        - {$ref: "#/components/parameters/Path"}
+        - name: header
+          in: query
+          required: true
+          schema: {type: string}
+          description: |
+            A slug from `/file-headers`, or the raw heading text (slugified before matching).
+      responses:
+        "200":
+          description: The section's raw markdown.
+          content:
+            text/markdown:
+              schema: {type: string}
+              example: "## Plan\n\nShip it.\n\n### Later\n\nMaybe."
+        "403": {$ref: "#/components/responses/PermissionRequired"}
+        "404": {description: No such vault, file, or header.}
+
+  /file:
+    get:
+      summary: Read a whole file
+      parameters:
+        - {$ref: "#/components/parameters/Vault"}
+        - {$ref: "#/components/parameters/Path"}
+      responses:
+        "200":
+          description: The file's raw markdown.
+          content:
+            text/markdown:
+              schema: {type: string}
+        "403": {$ref: "#/components/responses/PermissionRequired"}
+        "404": {description: No such vault or file.}
+
+components:
+  parameters:
+    Vault:
+      name: vault
+      in: query
+      required: true
+      schema: {type: string}
+      description: Vault name.
+    Path:
+      name: path
+      in: query
+      required: true
+      schema: {type: string}
+      description: File path relative to the vault root, e.g. `projects/plan.md`.
+
+  schemas:
+    FileRef:
+      type: object
+      required: [vault, path]
+      properties:
+        vault: {type: string, example: personal}
+        path: {type: string, example: projects/plan.md}
+
+    Header:
+      type: object
+      required: [level, text, slug, line]
+      properties:
+        level: {type: integer, minimum: 1, maximum: 6, example: 2}
+        text: {type: string, description: Heading text without the `#` marks., example: Plan}
+        slug: {type: string, example: plan}
+        line: {type: integer, description: 1-based line number of the heading., example: 12}
+
+    Grant:
+      type: object
+      required: [vault, paths, access]
+      properties:
+        vault: {type: string}
+        paths:
+          oneOf:
+            - {type: string, enum: ["*"]}
+            - {type: array, items: {type: string}}
+        access: {type: string, enum: [read, comment, write]}
+
+  responses:
+    PermissionRequired:
+      description: |
+        The caller has no grant covering the requested data. `grant_url` is a page in this
+        md-notes app where the owner can create one.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error, required_grant, grant_url]
+            properties:
+              error: {type: string, enum: [permission_required]}
+              required_grant:
+                type: object
+                properties:
+                  grant:
+                    type: object
+                    properties:
+                      access: {type: string, enum: [read, comment, write]}
+                  scope: {type: string, enum: [app]}
+              grant_url: {type: string, format: uri}

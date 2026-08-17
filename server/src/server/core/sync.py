@@ -302,6 +302,19 @@ class SyncManager:
             self._schedule_room_cleanup(doc_path, room)
         return result
 
+    async def read_doc(self, doc_path: str) -> str:
+        """The document's current text, read from its live Y.Doc — so in-flight edits are included.
+
+        Loads the room if nobody has it open; ``mutate_doc``'s cleanup scheduling then drops it
+        again after the usual grace period. Raises ``FileNotFoundError`` if the .md is gone.
+        """
+
+        def read(doc: Doc[Any]) -> str:
+            text = doc.get("content", type=Text)
+            return str(text) if text is not None else ""
+
+        return await self.mutate_doc(doc_path, read)
+
     async def close_rooms(self, doc_path: str, *, save: bool, reason: str) -> None:
         """Force-close the live room at ``doc_path`` and any rooms below it (for directories/vaults).
 

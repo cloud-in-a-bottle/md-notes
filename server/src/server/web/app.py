@@ -20,6 +20,8 @@ from server.core.db import close_db
 from server.core.db import init_db
 from server.core.files import PathTraversalError
 from server.core.history import HistoryManager
+from server.core.router_api import RouterCallFailed
+from server.core.service_grants import grant_page_url
 from server.core.sync import SyncManager
 from server.core.vaults import InvalidVaultName
 from server.core.vaults import VaultAlreadyExists
@@ -28,6 +30,9 @@ from server.web.api.comments import DocCommentsController
 from server.web.api.comments import ShareCommentsController
 from server.web.api.docs import DocsController
 from server.web.api.federation import FederationController
+from server.web.api.service import NotesServiceController
+from server.web.api.service import ServicePermissionRequired
+from server.web.api.service_grants import ServiceGrantsController
 from server.web.api.settings import SettingsController
 from server.web.api.share import ShareController
 from server.web.api.vaults import VaultsController
@@ -86,6 +91,32 @@ def _invalid_comment_handler(request: Request[Any, Any, Any], exc: InvalidCommen
     return Response({"error": str(exc)}, status_code=400)
 
 
+def _router_call_failed_handler(request: Request[Any, Any, Any], exc: RouterCallFailed) -> Response[dict[str, str]]:
+    return Response({"error": f"OpenHost router rejected the request: {exc}"}, status_code=502)
+
+
+def _service_permission_handler(
+    request: Request[Any, Any, Any], exc: ServicePermissionRequired
+) -> Response[dict[str, Any]]:
+    """The service's documented 403: what's missing, plus where the owner can grant it.
+
+    The consumer's name comes from the router and goes straight into the grant URL. Nothing is
+    recorded — the name is also what we later hand the router to create the grant, so a link edited
+    on its way to the owner grants access to whichever app it names.
+    """
+    config: Config = request.app.state.config
+    headers = request.headers
+    consumer_name = headers.get("x-openhost-consumer-name") or headers.get("x-openhost-consumer-id") or ""
+    return Response(
+        {
+            "error": "permission_required",
+            "required_grant": {"grant": {"access": exc.access}, "scope": "app"},
+            "grant_url": grant_page_url(config, consumer_name, exc.access),
+        },
+        status_code=403,
+    )
+
+
 def create_app(config: Config) -> Litestar:
     config.vault_path.mkdir(parents=True, exist_ok=True)
 
@@ -113,6 +144,8 @@ def create_app(config: Config) -> Litestar:
             VaultsController,
             ShareController,
             FederationController,
+            NotesServiceController,
+            ServiceGrantsController,
             SettingsController,
             health,
             api_health,
@@ -133,6 +166,8 @@ def create_app(config: Config) -> Litestar:
             CommentNotFound: _comment_not_found_handler,
             CommentPermissionError: _comment_permission_handler,
             InvalidComment: _invalid_comment_handler,
+            ServicePermissionRequired: _service_permission_handler,
+            RouterCallFailed: _router_call_failed_handler,
         },
     )
     app.state.config = config

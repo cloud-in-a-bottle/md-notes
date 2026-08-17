@@ -1,0 +1,3 @@
+[service]
+name = "notes"
+description = "Read-only access to a markdown notes vault — list files, list headers, read a section or a whole file"

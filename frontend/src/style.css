@@ -807,6 +807,49 @@ li.open > .sidebar-item .sidebar-arrow svg {
   margin: 10px 0;
 }
 
+.service-grant .vault-picker-item.service-grant-selected {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--muted));
+}
+
+.service-grant-scope {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.service-grant-files {
+  margin-top: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.service-grant-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.service-grant-dir {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+  padding: 4px 0 2px;
+}
+
+.service-grant-notice {
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+}
+
 .share-new-section {
   margin-top: 16px;
   padding-top: 12px;

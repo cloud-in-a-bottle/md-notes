@@ -48,6 +48,31 @@ export function getFederationInvite(): FederationInvite | null {
   return parseFederationInvite(window.location.pathname, window.location.search);
 }
 
+export interface ServiceGrantLink {
+  /** OpenHost app name of the requester. Also what the grant is keyed to, so editing it here only
+   *  redirects the access to whichever app is named — never to the editor. */
+  consumer: string;
+  access: string;
+  /** Where the requesting app wants the browser sent afterwards; the server vets it. */
+  returnTo: string | null;
+}
+
+export function parseServiceGrantLink(pathname: string, search: string): ServiceGrantLink | null {
+  if (pathname.replace(/\/$/, '') !== '/service/grant') return null;
+  const params = new URLSearchParams(search);
+  return {
+    consumer: params.get('consumer') ?? '',
+    access: params.get('access') ?? '',
+    returnTo: params.get('return_to'),
+  };
+}
+
+/** Params from a /service/grant consent link, or null for the regular app. */
+export function getServiceGrantLink(): ServiceGrantLink | null {
+  if (typeof window === 'undefined') return null;
+  return parseServiceGrantLink(window.location.pathname, window.location.search);
+}
+
 /** UUID extracted from /share/<uuid> URLs, or null for the regular app. */
 export function getShareUuid(): string | null {
   if (typeof window === 'undefined') return null;

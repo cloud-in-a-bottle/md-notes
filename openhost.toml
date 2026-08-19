@@ -21,6 +21,9 @@ endpoint = "/api/service/notes/"
 
 [resources]
 memory_mb = 1024
+# The frontend production build (Vite/Rollup) peaks around 1.4 GB — more than
+# the app needs at runtime — so give the build its own, higher cap.
+build_memory_mb = 1536
 # more cores = faster search
 cpu_cores = 4
 

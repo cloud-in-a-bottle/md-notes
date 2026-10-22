@@ -37,7 +37,7 @@
     "codemirror": "^6.0.2",
     "lib0": "^0.2.117",
     "lowlight": "^3.3.0",
-    "solid-js": "^1.9.12",
+    "solid-js": "^1.9.17",
     "vite-plugin-solid": "^2.11.12",
     "y-codemirror.next": "^0.3.5",
     "y-indexeddb": "^9.0.12",

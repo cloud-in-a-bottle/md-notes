@@ -1,8 +1,10 @@
 """Comment CRUD, permission rules, orphan GC, and the REST → Y.Doc write path."""
 
-import asyncio
 import base64
+from collections.abc import Callable
+from collections.abc import Coroutine
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pycrdt import Assoc
@@ -157,7 +159,9 @@ def test_gc_deletes_collapsed_comments_and_replies() -> None:
     assert gc_orphaned_comments(doc, "test.md") == 0
 
 
-def test_mutate_doc_persists_comment_to_sidecar_not_md(tmp_path: Path) -> None:
+def test_mutate_doc_persists_comment_to_sidecar_not_md(
+    tmp_path: Path, run_async: Callable[[Coroutine[Any, Any, Any]], Any]
+) -> None:
     async def run() -> None:
         vault = tmp_path / "vault"
         vault.mkdir()
@@ -199,4 +203,4 @@ def test_mutate_doc_persists_comment_to_sidecar_not_md(tmp_path: Path) -> None:
         finally:
             await manager.stop()
 
-    asyncio.run(run())
+    run_async(run())

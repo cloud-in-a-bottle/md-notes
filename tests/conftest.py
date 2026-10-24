@@ -1,4 +1,9 @@
+import asyncio
 import time
+from collections.abc import Callable
+from collections.abc import Coroutine
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 import pytest
 from openhost_test_harness import OpenhostStack
@@ -22,3 +27,18 @@ def stack():
     with OpenhostStack() as s:
         _wait_healthy(s)
         yield s
+
+
+@pytest.fixture
+def run_async() -> Callable[[Coroutine[Any, Any, Any]], Any]:
+    """Runs a coroutine to completion on a fresh event loop in a worker thread.
+
+    Playwright's sync API (the browser tests) leaves an event loop running on the main thread for the rest of the
+    session, so a plain asyncio.run() in a later test raises RuntimeError.
+    """
+
+    def run(coro: Coroutine[Any, Any, Any]) -> Any:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            return pool.submit(asyncio.run, coro).result()
+
+    return run

@@ -550,7 +550,7 @@ wheels = [
 
 [[package]]
 name = "litestar"
-version = "2.22.0"
+version = "2.25.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -567,9 +567,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/ad/5193bb4c497d7240a83f6adc42b9e08384ef32dccc957456bb5f25d981eb/litestar-2.22.0.tar.gz", hash = "sha256:f92ec689fd25fd1bf25c8593a97830b0aa936490703d60cbace43170adcb64b0", size = 380598, upload-time = "2026-05-20T16:45:27.517Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/08/eb40e03558b60ea10651d132aa666825eac040c3773b4a332ba305afb00b/litestar-2.25.0.tar.gz", hash = "sha256:7fad91fcd89367fcd26534ab19b6b05763cc67ab9574baa914546089e1ed1fb4", size = 385679, upload-time = "2026-10-18T19:13:42.048Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/58/5a692eb88f964ef84a75f6006ecafa713361cdd0a28f5deb2bea4ef809d7/litestar-2.22.0-py3-none-any.whl", hash = "sha256:9d22a86fd9eae34d692d2d11320a8c2176cc3711cdb593fd7e4537098adf9137", size = 579204, upload-time = "2026-05-20T16:45:25.323Z" },
+    { url = "https://files.pythonhosted.org/packages/47/32/247552ea639cd640db8057c4b6f0f8337dcf0d1f05d003dfdb9d5e77e4c7/litestar-2.25.0-py3-none-any.whl", hash = "sha256:ff16470b6aa3031ea3210bbb474b00b24c636ddfe8e0ee3d09c85aff3058a93f", size = 584699, upload-time = "2026-10-18T19:13:39.897Z" },
 ]
 
 [[package]]
@@ -678,7 +678,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "mypy" },
-    { name = "openhost", extras = ["test-harness"], git = "https://github.com/imbue-openhost/openhost?rev=main" },
+    { name = "openhost", extras = ["test-harness"], git = "https://github.com/cloud-in-a-bottle/cloud-in-a-bottle?rev=main" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -819,8 +819,8 @@ wheels = [
 
 [[package]]
 name = "openhost"
-version = "0.1.0"
-source = { git = "https://github.com/imbue-openhost/openhost?rev=main#0010f27308df6c1ba03ec238eb5a5e6b5ff9a9eb" }
+version = "0.3.0rc1"
+source = { git = "https://github.com/cloud-in-a-bottle/cloud-in-a-bottle?rev=main#445237109b17a42a5d11e61b2b8b5554cb6ab9a1" }
 dependencies = [
     { name = "acme" },
     { name = "argon2-cffi" },
@@ -843,6 +843,7 @@ dependencies = [
     { name = "packaging" },
     { name = "pygments" },
     { name = "pyjwt", extra = ["crypto"] },
+    { name = "pyyaml" },
     { name = "tomli-w" },
     { name = "typed-settings" },
     { name = "websockets" },

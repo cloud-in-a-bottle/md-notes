@@ -1,6 +1,8 @@
 """Deleted/renamed docs must stay deleted: sidecars go with them, and live rooms can't write them back."""
 
 import asyncio
+from collections.abc import Callable
+from collections.abc import Coroutine
 from pathlib import Path
 from typing import Any
 
@@ -87,7 +89,7 @@ async def _open_room(manager: SyncManager, doc_path: str) -> Any:
     return room
 
 
-def test_save_room_skips_deleted_md(tmp_path: Path) -> None:
+def test_save_room_skips_deleted_md(tmp_path: Path, run_async: Callable[[Coroutine[Any, Any, Any]], Any]) -> None:
     async def run() -> None:
         vaults, vault = _setup(tmp_path)
         create_file(vault, "a.md", "hello")
@@ -106,10 +108,12 @@ def test_save_room_skips_deleted_md(tmp_path: Path) -> None:
         await manager.stop()
         assert not (vault / "a.md").exists()
 
-    asyncio.run(run())
+    run_async(run())
 
 
-def test_close_rooms_drops_room_and_pending_save(tmp_path: Path) -> None:
+def test_close_rooms_drops_room_and_pending_save(
+    tmp_path: Path, run_async: Callable[[Coroutine[Any, Any, Any]], Any]
+) -> None:
     async def run() -> None:
         vaults, vault = _setup(tmp_path)
         create_file(vault, "a.md", "hello")
@@ -144,10 +148,12 @@ def test_close_rooms_drops_room_and_pending_save(tmp_path: Path) -> None:
         await manager.stop()
         assert not (vault / "a.md").exists()
 
-    asyncio.run(run())
+    run_async(run())
 
 
-def test_close_rooms_with_save_flushes_content(tmp_path: Path) -> None:
+def test_close_rooms_with_save_flushes_content(
+    tmp_path: Path, run_async: Callable[[Coroutine[Any, Any, Any]], Any]
+) -> None:
     async def run() -> None:
         vaults, vault = _setup(tmp_path)
         create_file(vault, "a.md", "hello")
@@ -162,10 +168,12 @@ def test_close_rooms_with_save_flushes_content(tmp_path: Path) -> None:
         assert crdt_store.read_state(vaults, "v/a.md") is not None
         await manager.stop()
 
-    asyncio.run(run())
+    run_async(run())
 
 
-def test_close_rooms_prefix_covers_directories(tmp_path: Path) -> None:
+def test_close_rooms_prefix_covers_directories(
+    tmp_path: Path, run_async: Callable[[Coroutine[Any, Any, Any]], Any]
+) -> None:
     async def run() -> None:
         vaults, vault = _setup(tmp_path)
         create_file(vault, "dir/a.md", "one")
@@ -183,7 +191,7 @@ def test_close_rooms_prefix_covers_directories(tmp_path: Path) -> None:
         assert "v/other.md" in manager._ws_server.rooms
         await manager.stop()
 
-    asyncio.run(run())
+    run_async(run())
 
 
 class FakeChannel:
@@ -217,7 +225,9 @@ class FakeChannel:
         await self._queue.put(None)
 
 
-def test_close_rooms_disconnects_clients_without_zombie_cleanup(tmp_path: Path) -> None:
+def test_close_rooms_disconnects_clients_without_zombie_cleanup(
+    tmp_path: Path, run_async: Callable[[Coroutine[Any, Any, Any]], Any]
+) -> None:
     async def run() -> None:
         vaults, vault = _setup(tmp_path)
         create_file(vault, "a.md", "hello")
@@ -250,4 +260,4 @@ def test_close_rooms_disconnects_clients_without_zombie_cleanup(tmp_path: Path) 
         await manager.stop()
         assert not (vault / "a.md").exists()
 
-    asyncio.run(run())
+    run_async(run())

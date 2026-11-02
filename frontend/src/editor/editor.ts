@@ -175,9 +175,12 @@ function buildExtensions(kind: EditorKind, vimrcContent: string | undefined, use
             effects: setMouseSelecting.of(false),
             selection: view.state.selection,
           });
-          document.removeEventListener('mouseup', onUp);
+          window.removeEventListener('mouseup', onUp, true);
         };
-        document.addEventListener('mouseup', onUp);
+        // Capture on window: widgets (e.g. rendered code blocks) stop mouseup from bubbling, and a
+        // missed release leaves mouseSelecting stuck on, which freezes live preview and hides the
+        // add-comment button until the next click.
+        window.addEventListener('mouseup', onUp, true);
         return false;
       },
     }),

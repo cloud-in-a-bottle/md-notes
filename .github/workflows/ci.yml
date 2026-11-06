@@ -16,3 +16,9 @@ jobs:
     permissions:
       contents: read
       id-token: write
+
+  release:
+    needs: image
+    uses: cloud-in-a-bottle/app-template/.github/workflows/app-release.yml@main
+    permissions:
+      contents: write

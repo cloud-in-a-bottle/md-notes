@@ -86,6 +86,8 @@ shapes the grant, so a consumer app can't ask for more than the owner picks. Pub
 
 ## Development
 
+`cloudinabottle.toml` sets `prebuilt_image`, so Cloud in a Bottle pulls our signed prebuilt image (built by CI from each release tag) instead of building the Dockerfile. To fork and modify this app, comment out `prebuilt_image` so your instance builds from source.
+
 Running locally without a container (faster iteration than the openhost harness):
 
 - **Server**: config comes from the OpenHost env vars and fails loudly without them. Vaults are plain directories of .md files under `$OPENHOST_APP_DATA_DIR/vault/<vault-name>/`. The identity/router vars only matter for links and cross-app calls, so any placeholder works locally.

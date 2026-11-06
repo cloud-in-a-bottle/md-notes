@@ -8,3 +8,11 @@ on:
 jobs:
   test:
     uses: cloud-in-a-bottle/app-template/.github/workflows/app-test.yml@main
+
+  image:
+    needs: test
+    if: github.event_name == 'push'
+    uses: cloud-in-a-bottle/app-template/.github/workflows/app-image.yml@main
+    permissions:
+      contents: read
+      id-token: write

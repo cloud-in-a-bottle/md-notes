@@ -1,10 +1,13 @@
 [app]
 name = "md-notes"
-version = "0.1.0"
+version = "1.0.0"
 description = "Obsidian-like markdown notes app with live preview and Yjs sync"
 
 [runtime.container]
 image = "Dockerfile"
+# Cloud in a Bottle pulls this signed prebuilt image (built from the release tag's commit by CI) instead of building
+# `image`. If you fork this app and change it, comment this line out so your instance builds `image` instead.
+prebuilt_image = "registry.cloudinabottle.org/md-notes"
 port = 8080
 
 [routing]

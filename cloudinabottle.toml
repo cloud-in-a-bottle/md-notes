@@ -1,6 +1,7 @@
 [app]
 name = "md-notes"
-version = "1.0.0"
+version = "1.0.1"
+release_tag_format = "semver"
 description = "Obsidian-like markdown notes app with live preview and Yjs sync"
 
 [runtime.container]
